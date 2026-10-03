@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator AHP Dinamis</title>
+    <meta name="description" content="Enterprise AHP Decision Engine for objective IT vendor & architecture selection, to evaluate IT vendors, software investments, and strategic enterprise choices without cognitive bias.">
+    <link rel="icon" href="assets/img/icon-nusait.webp" sizes="192x192" type="image/webp" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            color-scheme: light;
+            --brand-950: #1e1b4b;
+            --brand-800: #3730a3;
+            --brand-700: #4338ca;
+            --brand-600: #4f46e5;
+            --brand-100: #e0e7ff;
+            --ink: #182230;
+            --muted: #657184;
+            --surface: #ffffff;
+            --canvas: #f4f6fb;
+            --line: #e4e9f1;
+            --radius-card: 18px;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(ellipse at 88% 2%, rgba(199, 210, 254, .4), transparent 30rem),
+                var(--canvas);
+            letter-spacing: -.012em;
+        }
+        body > header {
+            background: linear-gradient(118deg, #24205e 0%, #3730a3 52%, #5145d8 100%) !important;
+            box-shadow: 0 12px 34px rgba(49, 46, 129, .18) !important;
+            border-bottom: 1px solid rgba(255,255,255,.18);
+        }
+        body > header h1 { letter-spacing: -.045em; }
+        body > header p { max-width: 42rem; line-height: 1.65; }
+        main { padding-bottom: 3.5rem; }
+        main > section {
+            border-radius: var(--radius-card) !important;
+            border-color: var(--line) !important;
+            box-shadow: 0 8px 26px rgba(15, 23, 42, .045) !important;
+            transition: box-shadow .2s ease, border-color .2s ease;
+        }
+        main > section:hover { box-shadow: 0 12px 32px rgba(15, 23, 42, .075) !important; }
+        main > section > div:first-child {
+            background: linear-gradient(90deg, #fafbff 0%, #f5f6ff 100%) !important;
+            border-color: var(--line) !important;
+        }
+        main > section > div:first-child h2 { letter-spacing: -.025em; }
+        button, input, select { font: inherit; }
+        button { -webkit-tap-highlight-color: transparent; }
+        button:focus-visible, input:focus-visible, select:focus-visible {
+            outline: 3px solid rgba(99, 102, 241, .27) !important;
+            outline-offset: 2px;
+        }
+        input, select { transition: border-color .16s ease, box-shadow .16s ease; }
+        input:hover, select:hover { border-color: #a5b4fc !important; }
+        #criteria-list > div, #alternative-name-list > div { min-width: 0; }
+        #pairwise-table th, #pairwise-table td { vertical-align: middle; }
+        #pairwise-table select { min-height: 42px; }
+        #alternatives-input-container > div { box-shadow: 0 3px 12px rgba(15,23,42,.025); }
+        #alternatives-input-container > div > div:first-child { background: #f8f9fd !important; }
+        #alternative-results { scroll-margin-top: 1rem; }
+        #ranking-table th { white-space: normal; }
+        #ranking-table tbody tr:first-child td { color: #065f46; }
+        #consistency-summary { box-shadow: 0 5px 18px rgba(15,23,42,.035); }
+        #tutorial-modal { backdrop-filter: blur(8px); }
+        #tutorial-content { border: 1px solid rgba(255,255,255,.65); }
+        #toast-container > div { max-width: min(30rem, calc(100vw - 2rem)); }
+        ::selection { color: #fff; background: #4f46e5; }
+        /* Custom Scrollbar untuk tabel (hanya di tampilan web) */
+        .table-scroll::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .table-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        .table-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .table-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        @media (max-width: 640px) {
+            body { background: var(--canvas); }
+            body > header { padding-block: 1.4rem !important; margin-bottom: 1.25rem !important; }
+            body > header h1 { font-size: 1.65rem !important; line-height: 1.15 !important; }
+            main { padding-inline: .9rem !important; gap: 1.1rem !important; }
+            main > section > div:nth-child(2) { padding: 1rem !important; }
+            main > section > div:first-child { padding: 1rem !important; }
+            #section-result > div:first-child { align-items: flex-start !important; }
+            #pdf-content { padding: 1rem !important; }
+            #ranking-table { min-width: 760px; }
+            #pairwise-table { min-width: 620px; }
+            #alternative-name-list { grid-template-columns: minmax(0, 1fr) !important; }
+            #alternatives-input-container > div > div:first-child { align-items: flex-start !important; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+        }
+
+        /* Tata letak cetak laporan responsif; matriks lebar memakai landscape. */
+        @media print {
+            @page { size: A4 landscape; margin: 9mm; }
+            html, body { width: auto !important; height: auto !important; background: #fff !important; color: #0f172a !important; padding: 0 !important; margin: 0 !important; overflow: visible !important; }
+            body > header, body > main > section:not(#section-result):not(#section-alternatives), #tutorial-modal, #toast-container { display: none !important; }
+            body > main { display: block !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+            #section-result, #section-alternatives.print-alternatives { display: block !important; position: static !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+            #section-result > div:first-child, #section-alternatives .input-controls, #section-alternatives > div > .mb-6.rounded-xl { display: none !important; }
+            #pdf-content { display: block !important; width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; overflow: visible !important; }
+            #pdf-header { display: block !important; }
+            #pdf-content > div.space-y-6 { display: block !important; }
+            #consistency-summary { break-inside: avoid !important; page-break-inside: avoid !important; }
+            #pdf-content > div.space-y-6 > div:nth-child(2) { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8mm !important; break-inside: avoid !important; page-break-inside: avoid !important; }
+            #pdf-content > div.space-y-6 > div:nth-child(2) > div { min-width: 0 !important; height: auto !important; }
+            .table-scroll, .overflow-x-auto, .overflow-y-auto { display: block !important; overflow: visible !important; max-height: none !important; }
+            .pdf-table-wrapper { break-inside: auto !important; }
+            table { width: 100% !important; min-width: 0 !important; border-collapse: collapse !important; table-layout: auto !important; }
+            thead { display: table-header-group !important; }
+            tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+            th, td { padding: 2.2mm !important; font-size: 8pt !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: anywhere !important; }
+            #result-initial-table, #result-norm-table { font-size: 7pt !important; }
+            #result-initial-table th, #result-initial-table td, #result-norm-table th, #result-norm-table td { padding: 1.5mm !important; font-size: 7pt !important; }
+            #section-alternatives.print-alternatives { break-before: page !important; page-break-before: always !important; }
+            #section-alternatives #alternative-results, #section-alternatives #alternative-results.hidden { display: block !important; }
+            #ranking-table { table-layout: fixed !important; }
+            #ranking-table th, #ranking-table td { font-size: 7pt !important; padding: 1.6mm !important; }
+            #ranking-method-note, #winner-summary { font-size: 8pt !important; }
+            h3 { break-after: avoid !important; page-break-after: avoid !important; }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen pb-12 relative">
+
+    <header class="bg-indigo-600 text-white shadow-md py-6 mb-8 relative z-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight">Kalkulator AHP Dinamis</h1>
+                <p class="mt-2 text-indigo-100 text-sm sm:text-base">Hitung bobot kriteria dan konsistensi dengan Analytic Hierarchy Process.</p>
+            </div>
+            <button onclick="openTutorialModal()" class="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Cara Penggunaan
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 relative z-10">
+
+        <section id="section-criteria" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-3">
+                <span class="bg-indigo-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-800">Definisikan Kriteria</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Masukkan kriteria yang akan dievaluasi (Minimal 2).</p>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="criteria-list" class="space-y-3 mb-6">
+                    <!-- Kriteria dirender oleh JS -->
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="addCriterion()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-sm flex items-center justify-center transition-colors shadow-sm">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Tambah Kriteria
+                    </button>
+                    <button onclick="generateMatrix()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm shadow-md transition-colors sm:ml-auto flex items-center justify-center">
+                        Lanjut Buat Matriks &rarr;
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-matrix" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hidden">
+            <div class="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-3">
+                <span class="bg-indigo-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-800">Matriks Perbandingan Berpasangan</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Bandingkan baris terhadap kolom menggunakan Skala 1-9 Saaty.</p>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="table-scroll overflow-x-auto pb-4 border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left border-collapse min-w-[600px]" id="pairwise-table">
+                        <thead class="text-xs text-slate-600 bg-slate-50 uppercase border-b border-slate-200">
+                            <!-- Header digenerate via JS -->
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <!-- Isi matriks digenerate via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <button onclick="calculateAHP()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm shadow-md transition-colors flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        Hitung Bobot AHP
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-alternatives" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hidden">
+            <div class="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-3">
+                <span class="bg-indigo-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-800">Bandingkan Alternatif dengan Nilai Nyata</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Masukkan data tiap pilihan. Skor dan peringkat akan dihitung otomatis dari bobot kriteria AHP.</p>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="rounded-lg bg-indigo-50 border border-indigo-100 p-4 text-sm text-indigo-900 mb-5">
+                    Cara ini memakai bobot kriteria dari AHP, lalu menormalkan data alternatif dengan metode jumlah berbobot (SAW). Hasilnya adalah peringkat berbobot, bukan sintesis penuh AHP melalui matriks perbandingan alternatif. Pilih <strong>Benefit</strong> jika nilai lebih tinggi lebih baik (misalnya kualitas), atau <strong>Cost</strong> jika nilai lebih rendah lebih baik (misalnya harga/waktu).
+                </div>
+                <div class="input-controls flex flex-col sm:flex-row gap-3 mb-5">
+                    <button onclick="addAlternative()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-sm shadow-sm">+ Tambah Alternatif</button>
+                    <button onclick="calculateAlternatives()" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm shadow-md sm:ml-auto">Hitung Peringkat &rarr;</button>
+                </div>
+                <div class="mb-6 rounded-xl border border-slate-200 bg-white p-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div><h3 class="font-semibold text-slate-800">Daftar Alternatif</h3><p class="text-xs text-slate-500">Beri nama sesuai objek keputusan, misalnya merek dan model laptop.</p></div>
+                        <span class="text-xs text-slate-500">Minimal 2 alternatif</span>
+                    </div>
+                    <div id="alternative-name-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                </div>
+                <div id="alternatives-input-container" class="space-y-6"></div>
+                <div id="alternative-results" class="hidden mt-8 pt-6 border-t border-slate-200">
+                    <h3 class="text-lg font-bold text-slate-800 mb-2">Peringkat Alternatif</h3>
+                    <p id="ranking-method-note" class="text-sm text-slate-500 mb-4"></p>
+                    <div class="table-scroll overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-sm text-left border-collapse" id="ranking-table">
+                            <thead class="bg-slate-100 text-slate-700"></thead>
+                            <tbody class="divide-y divide-slate-200"></tbody>
+                        </table>
+                    </div>
+                    <div id="winner-summary" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="section-result" class="hidden">
+            <!-- Header Hasil (Diluar area PDF agar tombol tidak ikut tercetak) -->
+            <div class="flex flex-col sm:flex-row justify-between items-center bg-white rounded-xl shadow-sm p-4 border border-slate-200 mb-6">
+                <div class="flex items-center gap-3">
+                    <span class="bg-indigo-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                    <h2 class="text-lg font-semibold text-slate-800">Laporan Hasil Perhitungan</h2>
+                </div>
+                <button id="btn-download" onclick="downloadPDF()" class="mt-4 sm:mt-0 bg-rose-500 hover:bg-rose-600 text-white px-5 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    Download PDF
+                </button>
+            </div>
+
+            <!-- Kontainer Utama PDF -->
+            <div id="pdf-content" class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 mx-auto">
+                
+                <!-- Kop Laporan khusus PDF -->
+                <div class="text-center pb-6 border-b border-slate-200 mb-6 hidden" id="pdf-header">
+                    <h1 class="text-2xl font-bold text-slate-800">Laporan Analisis AHP</h1>
+                    <p class="text-slate-500 text-sm mt-1">Dicetak dari Kalkulator AHP Dinamis</p>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Box Kesimpulan Konsistensi -->
+                    <div id="consistency-summary" class="rounded-xl border p-5 flex flex-col md:flex-row items-center gap-5">
+                        <!-- Dirender via JS -->
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                        <!-- Tabel Parameter -->
+                        <div class="bg-slate-50 rounded-xl border border-slate-200 p-5">
+                            <h3 class="font-semibold text-slate-800 text-sm mb-4 border-b border-slate-200 pb-2">Parameter Konsistensi</h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between"><span class="text-slate-500">Nilai Eigen (λ max)</span><span id="res-lambda" class="font-bold text-slate-700"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Jumlah Kriteria (n)</span><span id="res-n" class="font-bold text-slate-700"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Consistency Index (CI)</span><span id="res-ci" class="font-bold text-slate-700"></span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Random Index (RI)</span><span id="res-ri" class="font-bold text-slate-700"></span></div>
+                                <div class="flex justify-between pt-3 border-t border-slate-200"><span class="font-bold text-slate-800">Consistency Ratio (CR)</span><span id="res-cr" class="font-bold text-indigo-600 text-base"></span></div>
+                            </div>
+                        </div>
+
+                        <!-- Tabel Bobot Prioritas -->
+                        <div class="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col h-full">
+                            <h3 class="font-semibold text-slate-800 text-sm mb-4 border-b border-slate-200 pb-2">Hasil Bobot Prioritas (Eigenvector)</h3>
+                            <div id="weights-table-container" class="table-scroll overflow-y-auto max-h-[200px] flex-grow">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="text-xs text-slate-500 sticky top-0 bg-slate-50">
+                                        <tr><th class="pb-2">Kriteria</th><th class="pb-2 text-right">Bobot</th><th class="pb-2 text-right">Persentase</th></tr>
+                                    </thead>
+                                    <tbody id="res-weights-body" class="divide-y divide-slate-200">
+                                        <!-- Render JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Matriks Awal & Jumlah -->
+                    <div class="pt-4">
+                        <h3 class="font-semibold text-slate-800 text-sm mb-3">Matriks Perbandingan Awal</h3>
+                        <div class="table-scroll overflow-x-auto border border-slate-200 rounded-lg pdf-table-wrapper">
+                            <table class="w-full text-xs text-left border-collapse min-w-full" id="result-initial-table">
+                                <!-- Generate JS -->
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Matriks Normalisasi -->
+                    <div class="pt-4">
+                        <h3 class="font-semibold text-slate-800 text-sm mb-3">Matriks Normalisasi</h3>
+                        <div class="table-scroll overflow-x-auto border border-slate-200 rounded-lg pdf-table-wrapper">
+                            <table class="w-full text-xs text-left border-collapse min-w-full" id="result-norm-table">
+                                <!-- Generate JS -->
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <div id="tutorial-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col transform scale-95 transition-transform duration-300 mx-auto mt-10" id="tutorial-content">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Panduan Penggunaan AHP
+                </h3>
+                <button onclick="closeTutorialModal()" class="text-slate-400 hover:text-rose-500 bg-white hover:bg-rose-50 rounded-lg p-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-grow text-slate-600 space-y-6 text-sm">
+                <div>
+                    <h4 class="font-bold text-slate-800 text-base mb-2">1. Mendefinisikan Kriteria</h4>
+                    <p>Langkah pertama adalah menentukan kriteria apa saja yang ingin Anda bandingkan. Anda bisa menambah atau menghapus kriteria sesuai kebutuhan. Minimal dibutuhkan 2 kriteria.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-800 text-base mb-2">2. Mengisi Matriks Perbandingan</h4>
+                    <p>Isi segitiga bagian atas matriks (dropdown), nilai kebalikan/resiprokalnya (segitiga bawah) akan otomatis terisi. Nilai diagonal selalu 1.</p>
+                </div>
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                    <h4 class="font-bold text-indigo-900 mb-3">Tabel Skala Penilaian Saaty (1-9)</h4>
+                    <ul class="space-y-2 text-indigo-800">
+                        <li><strong>1</strong> : Kedua kriteria <strong>sama pentingnya</strong>.</li>
+                        <li><strong>3</strong> : Kriteria satu <strong>sedikit lebih penting</strong>.</li>
+                        <li><strong>5</strong> : Kriteria satu <strong>lebih penting</strong>.</li>
+                        <li><strong>7</strong> : Kriteria satu <strong>sangat lebih penting</strong>.</li>
+                        <li><strong>9</strong> : Kriteria satu <strong>mutlak lebih penting</strong>.</li>
+                        <li><em>2, 4, 6, 8</em> : Nilai tengah/ragu-ragu.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-800 text-base mb-2">3. Memasukkan Nilai Alternatif</h4>
+                    <p>Setelah bobot kriteria dihitung, masukkan nilai nyata untuk setiap alternatif pada tiap kriteria. Pilih Benefit bila makin tinggi makin baik (misalnya kualitas), atau Cost bila makin rendah makin baik (misalnya harga). Sistem menormalisasi nilai dan mengalikan skor lokal dengan bobot kriteria untuk memperoleh peringkat.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-800 text-base mb-2">4. Consistency Ratio (CR)</h4>
+                    <p>Hasil valid jika nilai <strong>Consistency Ratio (CR) &le; 0.1</strong>. Jika CR > 0.1, revisi kembali penilaian perbandingan matriks Anda agar lebih konsisten.</p>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4">
+                    <h4 class="font-bold text-emerald-900 text-base mb-2">Contoh Skenario: Memilih Laptop</h4>
+                    <p class="text-emerald-900 mb-3">Misalnya Anda membandingkan Laptop A, Laptop B, dan Laptop C berdasarkan Harga, Kualitas, dan Desain.</p>
+                    <ol class="list-decimal pl-5 space-y-2 text-emerald-900">
+                        <li>Masukkan kriteria <strong>Harga</strong>, <strong>Kualitas</strong>, dan <strong>Desain</strong>. Di matriks AHP, tentukan kepentingan relatif setiap pasangan kriteria. Contoh: Harga 5 kali lebih penting daripada Desain, maka pilih 5 pada perbandingan Harga terhadap Desain.</li>
+                        <li>Klik <strong>Hitung Bobot AHP</strong>. Misalnya hasilnya Harga 50%, Kualitas 30%, dan Desain 20%. Periksa agar CR tidak lebih dari 0,1.</li>
+                        <li>Pada bagian alternatif, biarkan Harga sebagai <strong>Cost</strong> (harga lebih rendah lebih baik), sedangkan Kualitas dan Desain sebagai <strong>Benefit</strong> (nilai lebih tinggi lebih baik).</li>
+                        <li>Masukkan data nyata dengan satuan yang konsisten. Contoh: Harga A/B/C = Rp12.000.000 / Rp10.000.000 / Rp11.000.000; Kualitas = 8 / 7 / 9; Desain = 7 / 9 / 8.</li>
+                        <li>Klik <strong>Hitung Peringkat</strong>. Kalkulator menormalisasi nilai tiap kriteria, mengalikannya dengan bobot AHP, lalu menjumlahkan skor untuk menampilkan laptop dengan skor tertinggi.</li>
+                    </ol>
+                    <p class="text-xs text-emerald-800 mt-3">Gunakan skala nilai kualitas/desain yang sama untuk semua laptop (misalnya 1–10). Hasil merupakan metode jumlah berbobot (SAW) dengan bobot kriteria dari AHP.</p>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button onclick="closeTutorialModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
+                    Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container Toast Notifications -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3"></div>
+
+    <script>
+        // Data State
+        let criteriaList = ['Harga', 'Kualitas', 'Desain'];
+        let matrix = [];
+        let currentWeights = [];
+        let alternatives = ['Alternatif A', 'Alternatif B', 'Alternatif C'];
+        let alternativeValues = {};
+        let criteriaTypes = {};
+        
+        const RI_VALUES = {
+            1: 0.00, 2: 0.00, 3: 0.58, 4: 0.90, 5: 1.12, 
+            6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45, 10: 1.49,
+            11: 1.51, 12: 1.48, 13: 1.56, 14: 1.57, 15: 1.59
+        };
+
+        const ahpScale = [
+            {val: 9, label: "9 - Mutlak Lebih Penting"},
+            {val: 8, label: "8 - Mendekati Mutlak"},
+            {val: 7, label: "7 - Sangat Lebih Penting"},
+            {val: 6, label: "6 - Mendekati Sangat Penting"},
+            {val: 5, label: "5 - Lebih Penting"},
+            {val: 4, label: "4 - Mendekati Lebih Penting"},
+            {val: 3, label: "3 - Sedikit Lebih Penting"},
+            {val: 2, label: "2 - Mendekati Sedikit Lebih Penting"},
+            {val: 1, label: "1 - Sama Penting", default: true},
+            {val: 1/2, label: "1/2 (Kebalikan 2)"},
+            {val: 1/3, label: "1/3 (Kebalikan 3)"},
+            {val: 1/4, label: "1/4 (Kebalikan 4)"},
+            {val: 1/5, label: "1/5 (Kebalikan 5)"},
+            {val: 1/6, label: "1/6 (Kebalikan 6)"},
+            {val: 1/7, label: "1/7 (Kebalikan 7)"},
+            {val: 1/8, label: "1/8 (Kebalikan 8)"},
+            {val: 1/9, label: "1/9 (Kebalikan 9)"},
+        ];
+
+        document.addEventListener('DOMContentLoaded', renderCriteriaInputs);
+
+        // Helper: Toast UI
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-rose-500' : 'bg-emerald-500';
+            const icon = type === 'error' 
+                ? `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+                : `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transform transition-all duration-300 translate-x-full opacity-0`;
+            toast.innerHTML = `${icon} <span class="font-medium text-sm">${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-x-full', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Helper: Modal UI
+        const modal = document.getElementById('tutorial-modal');
+        const modalContent = document.getElementById('tutorial-content');
+
+        function openTutorialModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeTutorialModal() {
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeTutorialModal(); });
+
+        // Helper: Formatter
+        function formatReciprocal(value) {
+            if (value === 1) return "1";
+            if (value > 1 && Number.isInteger(value)) return value.toString();
+            const divider = Math.round(1 / value);
+            if(Number.isInteger(divider) && divider > 1) return `1/${divider}`;
+            return value.toFixed(3);
+        }
+        function formatDecimal(val, decimals = 4) { return Number(val).toFixed(decimals); }
+
+        // Core Functions: Criteria
+        function renderCriteriaInputs() {
+            const container = document.getElementById('criteria-list');
+            container.innerHTML = '';
+            criteriaList.forEach((crit, index) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-3';
+                row.innerHTML = `
+                    <div class="flex-grow relative flex items-center shadow-sm">
+                        <span class="absolute left-3 text-slate-400 font-bold text-sm bg-slate-100 px-2 py-1 rounded">C${index + 1}</span>
+                        <input type="text" value="${crit}" onchange="updateCriterion(${index}, this.value)" placeholder="Nama Kriteria" 
+                            class="w-full pl-14 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow bg-white">
+                    </div>
+                    <button onclick="removeCriterion(${index})" class="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200" title="Hapus Kriteria">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>`;
+                container.appendChild(row);
+            });
+        }
+
+        function addCriterion() {
+            criteriaList.push(`Kriteria ${criteriaList.length + 1}`);
+            renderCriteriaInputs();
+            hideResults();
+            document.getElementById('section-alternatives').classList.add('hidden');
+        }
+
+        function updateCriterion(index, value) {
+            criteriaList[index] = value.trim() === "" ? `Kriteria ${index + 1}` : value;
+            hideResults();
+            document.getElementById('section-alternatives').classList.add('hidden');
+        }
+
+        function removeCriterion(index) {
+            if (criteriaList.length <= 2) return showToast("Minimal harus ada 2 kriteria!", "error");
+            criteriaList.splice(index, 1);
+            renderCriteriaInputs();
+            hideResults();
+            document.getElementById('section-alternatives').classList.add('hidden');
+        }
+
+        function hideResults() {
+            document.getElementById('section-matrix').classList.add('hidden');
+            document.getElementById('section-result').classList.add('hidden');
+            document.getElementById('section-alternatives').classList.add('hidden');
+        }
+
+        // Core Functions: Matrix
+        function generateMatrix() {
+            if (criteriaList.length < 2) return;
+            const n = criteriaList.length;
+            matrix = Array(n).fill().map(() => Array(n).fill(1));
+
+            const thead = document.querySelector('#pairwise-table -thead, #pairwise-table thead');
+            const tbody = document.querySelector('#pairwise-table -tbody, #pairwise-table tbody');
+
+            let headerHTML = '<tr><th class="px-4 py-3 border-b border-slate-200 w-40 bg-slate-100/70">Kriteria</th>';
+            criteriaList.forEach(crit => headerHTML += `<th class="px-4 py-3 border-b border-slate-200 font-semibold text-center min-w-[150px]">${crit}</th>`);
+            headerHTML += '</tr>';
+            thead.innerHTML = headerHTML;
+
+            let bodyHTML = '';
+            for (let i = 0; i < n; i++) {
+                bodyHTML += `<tr><th class="px-4 py-3 font-semibold bg-slate-50 border-r border-slate-100 whitespace-nowrap">${criteriaList[i]}</th>`;
+                for (let j = 0; j < n; j++) {
+                    if (i === j) {
+                        bodyHTML += `<td class="px-4 py-2 text-center bg-slate-100/50"><span class="text-slate-400 font-bold block bg-slate-200/40 rounded py-1 border border-slate-200/50">1</span></td>`;
+                    } else if (i < j) {
+                        let selectHTML = `<select onchange="updateMatrixCell(${i}, ${j}, this.value)" class="w-full p-2 border border-slate-300 rounded text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-white shadow-sm font-medium cursor-pointer">`;
+                        ahpScale.forEach(opt => selectHTML += `<option value="${opt.val}" ${opt.default ? 'selected' : ''}>${opt.label}</option>`);
+                        selectHTML += `</select>`;
+                        bodyHTML += `<td class="px-4 py-2">${selectHTML}</td>`;
+                    } else {
+                        bodyHTML += `<td class="px-4 py-2 text-center bg-slate-50"><span id="cell-${i}-${j}" class="px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded text-indigo-700 font-semibold text-xs block transition-all duration-300">1</span></td>`;
+                    }
+                }
+                bodyHTML += '</tr>';
+            }
+            tbody.innerHTML = bodyHTML;
+
+            document.getElementById('section-matrix').classList.remove('hidden');
+            document.getElementById('section-result').classList.add('hidden');
+            document.getElementById('section-alternatives').classList.add('hidden');
+            document.getElementById('section-matrix').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function updateMatrixCell(row, col, valueStr) {
+            const value = parseFloat(valueStr);
+            matrix[row][col] = value;
+            matrix[col][row] = 1 / value;
+            
+            const recCell = document.getElementById(`cell-${col}-${row}`);
+            if (recCell) {
+                recCell.innerText = formatReciprocal(1 / value);
+                recCell.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-200', 'scale-105');
+                setTimeout(() => recCell.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-200', 'scale-105'), 400);
+            }
+        }
+
+        function calculateAHP() {
+            const n = criteriaList.length;
+            
+            // 1. Column Sums
+            let colSums = Array(n).fill(0);
+            for (let j = 0; j < n; j++) {
+                for (let i = 0; i < n; i++) colSums[j] += matrix[i][j];
+            }
+
+            // 2. Normalization & Weights
+            let normMatrix = Array(n).fill().map(() => Array(n).fill(0));
+            let weights = Array(n).fill(0);
+            
+            for (let i = 0; i < n; i++) {
+                let rowSum = 0;
+                for (let j = 0; j < n; j++) {
+                    normMatrix[i][j] = matrix[i][j] / colSums[j];
+                    rowSum += normMatrix[i][j];
+                }
+                weights[i] = rowSum / n;
+            }
+
+            // 3. Lambda Max
+            let lambdaMax = 0;
+            for (let i = 0; i < n; i++) lambdaMax += colSums[i] * weights[i];
+
+            // 4. CI & CR
+            let CI = n > 1 ? (lambdaMax - n) / (n - 1) : 0;
+            let RI = RI_VALUES[n] || 1.59;
+            let CR = RI === 0 ? 0 : CI / RI;
+
+            renderResults(colSums, normMatrix, weights, lambdaMax, CI, RI, CR);
+        }
+
+        function renderResults(colSums, normMatrix, weights, lambdaMax, CI, RI, CR) {
+            const n = criteriaList.length;
+            currentWeights = weights.slice();
+            const isConsistent = CR <= 0.1;
+
+            // Initial Matrix HTML
+            let initHtml = `<thead class="bg-slate-100 text-slate-700 text-center"><tr><th class="px-4 py-3 border border-slate-200 w-32 bg-slate-200/50">Kriteria</th>`;
+            criteriaList.forEach(c => initHtml += `<th class="px-4 py-3 border border-slate-200 font-semibold">${c}</th>`);
+            initHtml += `</tr></thead><tbody class="divide-y divide-slate-200">`;
+            
+            for(let i=0; i<n; i++) {
+                initHtml += `<tr><th class="px-4 py-2 border border-slate-200 bg-slate-50 text-left whitespace-nowrap font-medium text-slate-800">${criteriaList[i]}</th>`;
+                for(let j=0; j<n; j++) initHtml += `<td class="px-4 py-2 border border-slate-200 text-center font-mono text-slate-600 bg-white">${formatDecimal(matrix[i][j])}</td>`;
+                initHtml += `</tr>`;
+            }
+            initHtml += `<tr class="bg-indigo-50/70 font-bold"><td class="px-4 py-3 border border-slate-200 text-indigo-900">Total Kolom</td>`;
+            colSums.forEach(sum => initHtml += `<td class="px-4 py-3 border border-slate-200 text-center text-indigo-700 font-mono">${formatDecimal(sum)}</td>`);
+            initHtml += `</tr></tbody>`;
+            document.getElementById('result-initial-table').innerHTML = initHtml;
+
+            // Normalization HTML
+            let normHtml = `<thead class="bg-slate-100 text-slate-700 text-center"><tr><th class="px-4 py-3 border border-slate-200 w-32 bg-slate-200/50">Kriteria</th>`;
+            criteriaList.forEach(c => normHtml += `<th class="px-4 py-3 border border-slate-200 font-semibold">${c}</th>`);
+            normHtml += `<th class="px-4 py-3 border border-emerald-200 text-center bg-emerald-100 text-emerald-800 shadow-inner">Bobot Prioritas</th></tr></thead><tbody class="divide-y divide-slate-200">`;
+            
+            for(let i=0; i<n; i++) {
+                normHtml += `<tr><th class="px-4 py-2 border border-slate-200 bg-slate-50 text-left whitespace-nowrap font-medium text-slate-800">${criteriaList[i]}</th>`;
+                for(let j=0; j<n; j++) normHtml += `<td class="px-4 py-2 border border-slate-200 text-center font-mono text-slate-600 bg-white">${formatDecimal(normMatrix[i][j])}</td>`;
+                normHtml += `<td class="px-4 py-2 border border-emerald-200 text-center font-mono font-bold text-emerald-800 bg-emerald-50">${formatDecimal(weights[i])}</td></tr>`;
+            }
+            normHtml += `</tbody>`;
+            document.getElementById('result-norm-table').innerHTML = normHtml;
+
+            // Weights Summary
+            let wBody = '';
+            weights.forEach((w, i) => {
+                wBody += `<tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-2.5 text-slate-800 font-semibold">${criteriaList[i]}</td>
+                    <td class="py-2.5 text-right font-mono font-bold text-emerald-600 bg-emerald-50/50 px-2 rounded">${formatDecimal(w)}</td>
+                    <td class="py-2.5 text-right font-mono text-slate-500">${(w*100).toFixed(2)}%</td>
+                </tr>`;
+            });
+            document.getElementById('res-weights-body').innerHTML = wBody;
+
+            // Parameters Text
+            document.getElementById('res-lambda').innerText = formatDecimal(lambdaMax);
+            document.getElementById('res-n').innerText = n;
+            document.getElementById('res-ci').innerText = formatDecimal(CI);
+            document.getElementById('res-ri').innerText = RI;
+            document.getElementById('res-cr').innerText = formatDecimal(CR);
+
+            // Consistency Box
+            const sumCard = document.getElementById('consistency-summary');
+            if(isConsistent) {
+                sumCard.className = "rounded-xl border p-5 flex flex-col md:flex-row items-center gap-5 bg-emerald-50 border-emerald-200 shadow-sm";
+                sumCard.innerHTML = `
+                    <div class="bg-emerald-100 p-4 rounded-full text-emerald-600 shadow-sm shrink-0">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-emerald-800 mb-1">Matriks Konsisten!</h3>
+                        <p class="text-emerald-700 text-sm leading-relaxed">Nilai Consistency Ratio (CR) adalah <strong>${formatDecimal(CR)}</strong> (&#8804; 0.1). Bobot prioritas sudah teruji valid dan logis, sehingga aman digunakan untuk proses pengambilan keputusan.</p>
+                    </div>`;
+            } else {
+                sumCard.className = "rounded-xl border p-5 flex flex-col md:flex-row items-center gap-5 bg-rose-50 border-rose-200 shadow-sm";
+                sumCard.innerHTML = `
+                    <div class="bg-rose-100 p-4 rounded-full text-rose-600 shadow-sm shrink-0">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-rose-800 mb-1">Matriks Tidak Konsisten!</h3>
+                        <p class="text-rose-700 text-sm leading-relaxed">Nilai Consistency Ratio (CR) adalah <strong>${formatDecimal(CR)}</strong> (> 0.1). Silakan tinjau dan revisi kembali pengisian skala perbandingan pada tahap sebelumnya.</p>
+                    </div>`;
+            }
+
+            document.getElementById('section-result').classList.remove('hidden');
+            renderAlternativesInputs();
+            document.getElementById('section-alternatives').classList.remove('hidden');
+            document.getElementById('section-alternatives').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function addAlternative() {
+            alternatives.push(`Alternatif ${String.fromCharCode(64 + alternatives.length + 1)}`);
+            renderAlternativesInputs();
+        }
+
+        function updateAlternativeName(index, value) {
+            alternatives[index] = value.trim() || `Alternatif ${index + 1}`;
+            // Jangan render ulang saat input berlangsung karena itu mengganti elemen
+            // aktif dan membuat fokus hilang setelah satu karakter.
+            document.getElementById('alternative-results').classList.add('hidden');
+        }
+
+        function refreshAlternativeLabels() {
+            renderAlternativesInputs();
+        }
+
+        function removeAlternative(index) {
+            if (alternatives.length <= 2) return showToast('Minimal harus ada 2 alternatif!', 'error');
+            alternatives.splice(index, 1);
+            Object.keys(alternativeValues).forEach(key => {
+                const [criterionIndex, alternativeIndex] = key.split('-').map(Number);
+                if (alternativeIndex === index) delete alternativeValues[key];
+                else if (alternativeIndex > index) {
+                    alternativeValues[`${criterionIndex}-${alternativeIndex - 1}`] = alternativeValues[key];
+                    delete alternativeValues[key];
+                }
+            });
+            renderAlternativesInputs();
+        }
+
+        function setCriteriaType(index, type) {
+            criteriaTypes[index] = type;
+            document.getElementById('alternative-results').classList.add('hidden');
+        }
+
+        function setAlternativeValue(criterionIndex, alternativeIndex, value) {
+            alternativeValues[`${criterionIndex}-${alternativeIndex}`] = value;
+            document.getElementById('alternative-results').classList.add('hidden');
+        }
+
+        function renderAlternativesInputs() {
+            const container = document.getElementById('alternatives-input-container');
+            if (!container || !currentWeights.length) return;
+            const nameList = document.getElementById('alternative-name-list');
+            nameList.innerHTML = alternatives.map((alternative, index) => `<div class="flex items-center gap-2"><label class="flex-1 text-xs font-medium text-slate-600">Nama alternatif ${index + 1}<input type="text" value="${escapeAttribute(alternative)}" maxlength="80" oninput="updateAlternativeName(${index}, this.value)" onblur="refreshAlternativeLabels()" placeholder="Contoh: Lenovo IdeaPad Slim 5" class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></label><button type="button" onclick="removeAlternative(${index})" class="mt-5 px-3 py-2.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-sm" title="Hapus ${escapeAttribute(alternative)}" aria-label="Hapus alternatif ${index + 1}" ${alternatives.length <= 2 ? 'disabled' : ''}>Hapus</button></div>`).join('');
+            container.innerHTML = criteriaList.map((criterion, criterionIndex) => {
+                const type = criteriaTypes[criterionIndex] || (/(harga|biaya|cost|waktu|jarak|risiko|konsumsi)/i.test(criterion) ? 'cost' : 'benefit');
+                criteriaTypes[criterionIndex] = type;
+                return `<div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <div class="bg-slate-50 border-b border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                        <div><h3 class="font-semibold text-slate-800">${escapeHTML(criterion)}</h3><p class="text-xs text-slate-500">Bobot AHP: ${(currentWeights[criterionIndex] * 100).toFixed(2)}%</p></div>
+                        <label class="text-sm flex items-center gap-2">Jenis kriteria
+                            <select onchange="setCriteriaType(${criterionIndex}, this.value)" class="border border-slate-300 rounded-lg px-3 py-2 bg-white"><option value="benefit" ${type === 'benefit' ? 'selected' : ''}>Benefit · makin tinggi makin baik</option><option value="cost" ${type === 'cost' ? 'selected' : ''}>Cost · makin rendah makin baik</option></select>
+                        </label>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">${alternatives.map((alternative, alternativeIndex) => `<label class="text-xs font-medium text-slate-600">${escapeHTML(alternative)}<input type="number" step="any" ${type === 'cost' ? 'min="0"' : ''} value="${escapeAttribute(alternativeValues[`${criterionIndex}-${alternativeIndex}`] ?? '')}" onchange="setAlternativeValue(${criterionIndex}, ${alternativeIndex}, this.value)" placeholder="Masukkan nilai ${type === 'cost' ? '(lebih kecil lebih baik)' : '(lebih besar lebih baik)'}" class="mt-1 w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></label>`).join('')}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function escapeHTML(value) {
+            return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+        }
+
+        function escapeAttribute(value) { return escapeHTML(value); }
+
+        function calculateAlternatives() {
+            if (!currentWeights.length) return showToast('Hitung bobot kriteria terlebih dahulu.', 'error');
+            const raw = criteriaList.map((_, criterionIndex) => alternatives.map((_, alternativeIndex) => {
+                const value = Number(alternativeValues[`${criterionIndex}-${alternativeIndex}`]);
+                return Number.isFinite(value) ? value : NaN;
+            }));
+            const missing = raw.some(row => row.some(value => !Number.isFinite(value)));
+            if (missing) return showToast('Lengkapi semua nilai alternatif pada setiap kriteria.', 'error');
+            const invalidCostIndex = raw.findIndex((values, criterionIndex) => (criteriaTypes[criterionIndex] || 'benefit') === 'cost' && values.some(value => value <= 0));
+            if (invalidCostIndex !== -1) return showToast(`Nilai kriteria cost "${criteriaList[invalidCostIndex]}" harus lebih besar dari 0.`, 'error');
+
+            let localScores;
+            try {
+                localScores = raw.map((values, criterionIndex) => {
+                    const type = criteriaTypes[criterionIndex] || 'benefit';
+                    if (type === 'cost' && values.some(value => value <= 0)) {
+                        throw new Error(`Nilai untuk kriteria cost "${criteriaList[criterionIndex]}" harus lebih besar dari 0.`);
+                    }
+                    const transformed = type === 'cost' ? values.map(value => 1 / value) : values;
+                    const sum = transformed.reduce((total, value) => total + value, 0);
+                    if (sum === 0) throw new Error(`Jumlah nilai kriteria "${criteriaList[criterionIndex]}" tidak boleh nol.`);
+                    return transformed.map(value => value / sum);
+                });
+            } catch (error) {
+                return showToast(error.message, 'error');
+            }
+            const scores = alternatives.map((_, alternativeIndex) => localScores.reduce((total, criterionScores, criterionIndex) => total + currentWeights[criterionIndex] * criterionScores[alternativeIndex], 0));
+            const ranking = alternatives.map((name, index) => ({ name, index, score: scores[index] })).sort((a, b) => b.score - a.score);
+            const table = document.getElementById('ranking-table');
+            table.querySelector('thead').innerHTML = `<tr><th class="px-4 py-3 border border-slate-200">Peringkat</th><th class="px-4 py-3 border border-slate-200">Alternatif</th>${criteriaList.map(name => `<th class="px-4 py-3 border border-slate-200 text-right">${escapeHTML(name)}<br><span class="font-normal">Skor lokal</span></th>`).join('')}<th class="px-4 py-3 border border-slate-200 text-right">Skor akhir</th><th class="px-4 py-3 border border-slate-200 text-right">Persentase</th></tr>`;
+            table.querySelector('tbody').innerHTML = ranking.map((item, rank) => `<tr class="${rank === 0 ? 'bg-emerald-50 font-semibold' : 'bg-white'}"><td class="px-4 py-3 border border-slate-200 text-center">${rank + 1}</td><td class="px-4 py-3 border border-slate-200">${escapeHTML(item.name)}${rank === 0 ? ' 🏆' : ''}</td>${criteriaList.map((_, criterionIndex) => `<td class="px-4 py-3 border border-slate-200 text-right font-mono">${(localScores[criterionIndex][item.index] * 100).toFixed(2)}%</td>`).join('')}<td class="px-4 py-3 border border-slate-200 text-right font-mono font-bold">${item.score.toFixed(4)}</td><td class="px-4 py-3 border border-slate-200 text-right">${(item.score * 100).toFixed(2)}%</td></tr>`).join('');
+            document.getElementById('ranking-method-note').textContent = 'Benefit: nilai dinormalisasi dengan membagi nilai dengan total kriteria. Cost: nilai dibalik (1/nilai), lalu dinormalisasi. Skor lokal dikalikan bobot AHP kriteria dan dijumlahkan. Ini pendekatan berbobot dengan nilai kinerja langsung (bukan perbandingan alternatif berpasangan AHP klasik).';
+            document.getElementById('winner-summary').innerHTML = `<strong>Pilihan terbaik: ${escapeHTML(ranking[0].name)}</strong> dengan skor akhir ${ranking[0].score.toFixed(4)} (${(ranking[0].score * 100).toFixed(2)}%).`;
+            document.getElementById('alternative-results').classList.remove('hidden');
+            document.getElementById('alternative-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function downloadPDF() {
+            const btn = document.getElementById('btn-download');
+            const originalText = btn.innerHTML;
+            const pdfHeader = document.getElementById('pdf-header');
+            const reportTitle = document.querySelector('#section-result h2')?.textContent.trim() || 'Laporan Analisis AHP';
+            pdfHeader.classList.remove('hidden');
+            btn.disabled = true;
+            btn.textContent = 'Membuka dialog cetak...';
+            document.title = reportTitle.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '_');
+            const alternativesSection = document.getElementById('section-alternatives');
+            const hadRanking = !document.getElementById('alternative-results').classList.contains('hidden');
+            alternativesSection.classList.toggle('print-alternatives', hadRanking);
+            if (!hadRanking) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                pdfHeader.classList.add('hidden');
+                return showToast('Hitung peringkat alternatif terlebih dahulu sebelum menyimpan laporan PDF.', 'error');
+            }
+
+            // Browser membuat PDF langsung dari HTML/CSS cetak. Tidak memakai
+            // library eksternal, sehingga tetap bekerja pada file:// dan offline.
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                window.print();
+                pdfHeader.classList.add('hidden');
+                alternativesSection.classList.remove('print-alternatives');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }));
+        }
+    </script>
+</body>
+</html>
