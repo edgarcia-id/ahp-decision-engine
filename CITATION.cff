@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "Jika Anda memakai perangkat lunak ini dalam karya ilmiah, mohon kutip sebagai berikut."
+type: software
+title: "AHP Decision Engine"
+abstract: "Kalkulator Analytic Hierarchy Process (AHP) berbasis browser: hierarki bertingkat, perbandingan berpasangan skala Saaty, penilaian kelompok (AIJ), uji konsistensi, analisis sensitivitas, serta laporan PDF dan Excel."
+version: "2.0.0"
+date-released: "2026-10-17"
+license: MIT
+url: "https://edgarcia-id.github.io/ahp-decision-engine/"
+repository-code: "https://github.com/edgarcia-id/ahp-decision-engine"
+authors:
+  - family-names: "Tarigan"
+    given-names: "Alfredo Garcia Elbarta"
+    orcid: "https://orcid.org/0009-0001-4549-5129"
+    affiliation: "PT Nusa Industri Teknologi (NusaIT)"
+keywords:
+  - "analytic hierarchy process"
+  - "AHP"
+  - "multi-criteria decision making"
+  - "decision support system"
+  - "Saaty"
+  - "pairwise comparison"
